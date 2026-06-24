@@ -14,7 +14,7 @@ namespace OptiInstaller
 {
     static class App
     {
-        public const string Version = "2.2";
+        public const string Version = "2.4";
     }
 
     static class Program
@@ -57,7 +57,6 @@ namespace OptiInstaller
                 if (!FindInstallerRelease(json, out tag, out url)) return;
                 if (!IsNewer(tag, App.Version)) return;
 
-                string cur = Path.Combine(dir, "Instalar_Mod.exe");
                 string neu = Path.Combine(dir, "Instalar_Mod_new.exe");
                 using (WebClient wc = new WebClient())
                 {
@@ -70,13 +69,16 @@ namespace OptiInstaller
                     return;
                 }
 
+                // Usa cd /d "%~dp0" + nomes relativos para NAO escrever caminhos com acento
+                // (ex.: "Area de Trabalho") no .bat, que o cmd.exe leria errado e quebraria o move.
                 string bat = Path.Combine(dir, "_update.bat");
                 File.WriteAllText(bat,
                     "@echo off\r\n" +
+                    "cd /d \"%~dp0\"\r\n" +
                     ":wait\r\n" +
                     "tasklist /fi \"imagename eq Instalar_Mod.exe\" | find /i \"Instalar_Mod.exe\" >nul && (ping -n 2 127.0.0.1 >nul & goto wait)\r\n" +
-                    "move /y \"" + neu + "\" \"" + cur + "\" >nul\r\n" +
-                    "start \"\" \"" + cur + "\"\r\n" +
+                    "move /y \"Instalar_Mod_new.exe\" \"Instalar_Mod.exe\" >nul\r\n" +
+                    "start \"\" \"Instalar_Mod.exe\"\r\n" +
                     "del \"%~f0\"\r\n");
                 ProcessStartInfo psi = new ProcessStartInfo(bat);
                 psi.WindowStyle = ProcessWindowStyle.Hidden;
