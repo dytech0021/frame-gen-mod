@@ -413,7 +413,7 @@ namespace OptiInstaller
 
         string srcDir, selectedRoot, targetDir, lastAnalyzed;
         List<string> allFiles = new List<string>();
-        bool antiCheatFound = false, hasUpscaler = false, fsr4Available = false, dlssAvailable = false;
+        bool antiCheatFound = false, hasUpscaler = false, fsr4Available = false;
         string antiCheatFile = null;
 
         public MainForm()
@@ -653,15 +653,6 @@ namespace OptiInstaller
             {
                 cardFsr4.Enabled = false;
                 cardFsr4.Sub = "Pasta 'FSR4_INT8_4.0.2c' nao encontrada na pasta mods";
-            }
-            // DLSS 310.6 e opcional: se nao estiver no payload (ex.: removido para encolher o exe
-            // e nao distribuir DLLs proprietarios da NVIDIA), desativa a opcao em vez de falhar.
-            dlssAvailable = File.Exists(Path.Combine(srcDir, "DLSS 310.6\\nvngx_dlss.dll"));
-            if (!dlssAvailable)
-            {
-                cardDlss.Enabled = false;
-                cardDlss.Checked = false;
-                cardDlss.Sub = "DLSS 310.6 nao incluido nesta versao (use o DLSS proprio do jogo)";
             }
             if (missing.Count > 0)
             {

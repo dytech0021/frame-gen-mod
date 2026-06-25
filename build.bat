@@ -2,9 +2,7 @@
 REM Recompila o instalador usando o csc.exe que vem no Windows (.NET Framework 4).
 REM Requer "payload.zip" nesta pasta (arquivos do mod compactados: dxgi.dll, OptiScaler.ini,
 REM dlssg_to_fsr3..., fakenvapi..., amd_fidelityfx_dx12.dll, OptiPatcher.asi, D3D12_Optiscaler\,
-REM Licenses\, FSR4_INT8_4.0.2c\). Esses binarios nao ficam no git (grandes/terceiros).
-REM A pasta "DLSS 310.6\" e OPCIONAL: deixe-a FORA do payload.zip para encolher o exe e nao
-REM embutir DLLs proprietarios da NVIDIA (a opcao de upgrade de DLSS se desativa sozinha no app).
+REM Licenses\, DLSS 310.6\, FSR4_INT8_4.0.2c\). Esses binarios nao ficam no git (grandes/terceiros).
 setlocal
 set CSC=%WINDIR%\Microsoft.NET\Framework64\v4.0.30319\csc.exe
 

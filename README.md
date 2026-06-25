@@ -30,10 +30,7 @@ baixe o exe na aba **Releases** e rode de qualquer lugar.
 ## Compilar
 1. Gere o `payload.zip` com os arquivos do mod na raiz (`dxgi.dll`, `OptiScaler.ini`,
    `dlssg_to_fsr3_amd_is_better.dll`, `fakenvapi.dll`/`.ini`, `amd_fidelityfx_dx12.dll`,
-   `OptiPatcher.asi`, `D3D12_Optiscaler\`, `Licenses\`, `FSR4_INT8_4.0.2c\`).
-   - A pasta **`DLSS 310.6\` é opcional**. Deixe-a **fora** do `payload.zip` para encolher bastante
-     o exe e **não embutir DLLs proprietários da NVIDIA** — a opção "Atualizar DLSS" se desativa
-     sozinha no app. Isso também reduz o falso-positivo de antivírus (blob grande = cara de "dropper").
+   `OptiPatcher.asi`, `D3D12_Optiscaler\`, `Licenses\`, `DLSS 310.6\`, `FSR4_INT8_4.0.2c\`).
 2. Rode `build.bat` (usa o `csc.exe` do .NET Framework 4 que já vem no Windows).
 
 > Os binários do mod, o `payload.zip` e o exe **não** ficam no git (grandes/terceiros).
@@ -87,10 +84,6 @@ de .NET **não assinados** que baixam/atualizam arquivos.
 **Para o usuário liberar manualmente (se confiar na fonte):**
 1. Windows Defender → *Proteção contra vírus e ameaças* → *Histórico de proteção* → permitir o item; **ou**
 2. *Configurações de proteção contra vírus e ameaças* → *Exclusões* → adicionar a pasta do exe.
-
-> O payload de ~77 MB embutido (a partir da v2.5) aumenta a chance de detecção heurística
-> (blob comprimido grande = cara de "dropper"). Uma alternativa é o exe baixar o payload no
-> primeiro uso, em vez de embuti-lo — reduz o tamanho e o gatilho de ML, mas perde o "exe único".
 
 ## Observações
 - O exe **não é assinado**; o Windows Defender/SmartScreen pode exibir aviso de editor desconhecido.
