@@ -4,8 +4,10 @@ using System.Diagnostics;
 using System.Drawing;
 using System.Drawing.Drawing2D;
 using System.IO;
+using System.IO.Compression;
 using System.Linq;
 using System.Net;
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
@@ -14,7 +16,7 @@ namespace OptiInstaller
 {
     static class App
     {
-        public const string Version = "2.4";
+        public const string Version = "2.5";
     }
 
     static class Program
@@ -36,16 +38,22 @@ namespace OptiInstaller
             try
             {
                 string dir = AppDomain.CurrentDomain.BaseDirectory;
+                // Repositorio padrao embutido (faz o exe unico se atualizar sozinho).
+                // Pode ser sobrescrito por um update.cfg ao lado do exe.
+                string repo = "dytech0021/frame-gen-mod";
                 string cfg = Path.Combine(dir, "update.cfg");
-                if (!File.Exists(cfg)) return;
-                string repo = null;
-                foreach (string line in File.ReadAllLines(cfg))
+                if (File.Exists(cfg))
                 {
-                    string t = line.Trim();
-                    if (t.StartsWith("repo=", StringComparison.OrdinalIgnoreCase)) repo = t.Substring(5).Trim();
+                    foreach (string line in File.ReadAllLines(cfg))
+                    {
+                        string t = line.Trim();
+                        if (t.StartsWith("repo=", StringComparison.OrdinalIgnoreCase))
+                        {
+                            string v = t.Substring(5).Trim();
+                            if (v.Contains("/") && v.IndexOf("OWNER", StringComparison.OrdinalIgnoreCase) < 0) repo = v;
+                        }
+                    }
                 }
-                if (string.IsNullOrEmpty(repo) || repo.IndexOf("OWNER", StringComparison.OrdinalIgnoreCase) >= 0 || !repo.Contains("/"))
-                    return;
 
                 ServicePointManager.SecurityProtocol =
                     (SecurityProtocolType)3072 | (SecurityProtocolType)768 | SecurityProtocolType.Tls;
@@ -396,7 +404,7 @@ namespace OptiInstaller
 
         public MainForm()
         {
-            srcDir = AppDomain.CurrentDomain.BaseDirectory;
+            srcDir = EnsurePayload();
             DoubleBuffered = true;
             Text = "Instalador de Mods";
             FormBorderStyle = FormBorderStyle.None;
@@ -581,6 +589,41 @@ namespace OptiInstaller
             txtLog.AppendText(m + "\r\n");
             txtLog.SelectionStart = txtLog.TextLength;
             txtLog.ScrollToCaret();
+        }
+
+        // Extrai o payload do mod (embutido como recurso "payload.zip") para um cache
+        // em LocalAppData, uma vez por versao. Assim o exe funciona sozinho, sem precisar
+        // dos arquivos do mod ao lado. Se nao houver recurso embutido, usa a pasta do exe.
+        static string EnsurePayload()
+        {
+            string exeDir = AppDomain.CurrentDomain.BaseDirectory;
+            try
+            {
+                string cache = Path.Combine(
+                    Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),
+                    "FrameGenMod", "payload-v" + App.Version);
+                string marker = Path.Combine(cache, ".ok");
+                if (File.Exists(marker)) return cache;
+
+                Stream s = Assembly.GetExecutingAssembly().GetManifestResourceStream("payload.zip");
+                if (s == null) return exeDir;
+                Directory.CreateDirectory(cache);
+                using (s)
+                using (ZipArchive zip = new ZipArchive(s, ZipArchiveMode.Read))
+                {
+                    foreach (ZipArchiveEntry entry in zip.Entries)
+                    {
+                        if (string.IsNullOrEmpty(entry.Name)) continue; // pasta
+                        string dest = Path.Combine(cache, entry.FullName.Replace('/', '\\'));
+                        string ddir = Path.GetDirectoryName(dest);
+                        if (!Directory.Exists(ddir)) Directory.CreateDirectory(ddir);
+                        entry.ExtractToFile(dest, true);
+                    }
+                }
+                File.WriteAllText(marker, App.Version);
+                return cache;
+            }
+            catch { return exeDir; }
         }
 
         void CheckSource()

@@ -17,28 +17,35 @@ App com interface (.NET Framework / WinForms) que instala automaticamente, em jo
 | `OptiInstaller.cs` | Código do app |
 | `MakeIcon.cs` | Gera o `skull.ico` |
 | `skull.ico` | Ícone (caveira) |
-| `Instalar_Mod.exe` | App compilado |
-| `update.cfg` | Repositório do auto-update |
-| `build.bat` | Recompila tudo |
+| `Instalar_Mod.exe` | App compilado — **baixe na aba Releases** (não fica no git) |
+| `update.cfg` | (opcional) sobrescreve o repo do auto-update |
+| `build.bat` | Recompila (requer `payload.zip`) |
+
+## Exe autossuficiente
+A partir da **v2.5** o `Instalar_Mod.exe` é um **arquivo único**: o payload do mod (OptiScaler,
+dlssg-to-fsr3, fakenvapi, OptiPatcher, DLSS 310.6 e FSR4) fica **embutido** no exe e é extraído
+para `%LOCALAPPDATA%\FrameGenMod` na primeira execução. Não precisa de nenhum arquivo ao lado —
+baixe o exe na aba **Releases** e rode de qualquer lugar.
 
 ## Compilar
-Rode `build.bat` (usa o `csc.exe` do .NET Framework 4 que já vem no Windows). Não precisa instalar nada.
+1. Gere o `payload.zip` com os arquivos do mod na raiz (`dxgi.dll`, `OptiScaler.ini`,
+   `dlssg_to_fsr3_amd_is_better.dll`, `fakenvapi.dll`/`.ini`, `amd_fidelityfx_dx12.dll`,
+   `OptiPatcher.asi`, `D3D12_Optiscaler\`, `Licenses\`, `DLSS 310.6\`, `FSR4_INT8_4.0.2c\`).
+2. Rode `build.bat` (usa o `csc.exe` do .NET Framework 4 que já vem no Windows).
+
+> Os binários do mod, o `payload.zip` e o exe **não** ficam no git (grandes/terceiros).
 
 ## Auto-update (GitHub Releases)
-Ao abrir, o app lê `update.cfg` (`repo=usuario/repositorio`) e procura no GitHub a **release
-mais nova que tenha o arquivo `Instalar_Mod.exe` anexado** (ignora releases de outros produtos
-no mesmo repo). Se a tag for **maior** que a versão interna (`App.Version`), ele baixa e se
-substitui sozinho, e reabre.
+Ao abrir, o app procura no GitHub a **release mais nova que tenha o `Instalar_Mod.exe` anexado**
+(o repo padrão `dytech0021/frame-gen-mod` é **embutido no código**, então o exe único também se
+atualiza; um `update.cfg` ao lado do exe pode sobrescrever). Se a tag for **maior** que a versão
+interna (`App.Version`), ele baixa e se substitui sozinho, e reabre.
 
 ### Como lançar uma atualização
-1. Aumente `App.Version` em `OptiInstaller.cs` (ex.: `2.1` -> `2.2`) e rode `build.bat`.
-2. Crie uma **release** no GitHub com a tag igual (ex.: `v2.2`).
-3. Anexe o novo `Instalar_Mod.exe` à release.
+1. Aumente `App.Version` em `OptiInstaller.cs` e rode `build.bat`.
+2. Crie uma **release** com a tag igual (ex.: `v2.6`) e anexe o novo `Instalar_Mod.exe`.
 
 > ⚠️ A tag da release **deve bater** com `App.Version` do exe — senão entra em loop de update.
 
 ## Observações
-- O `Instalar_Mod.exe` precisa rodar a partir da pasta que contém os **arquivos do mod**
-  (`dxgi.dll`, `OptiScaler.ini`, `dlssg_to_fsr3...`, pasta `DLSS 310.6`, `FSR4_INT8...`, etc.).
-  Esses binários de terceiros **não** ficam no git (são grandes e licenciados à parte).
 - O exe **não é assinado**; o Windows Defender/SmartScreen pode exibir aviso de editor desconhecido.
