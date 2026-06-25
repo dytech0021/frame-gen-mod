@@ -30,7 +30,10 @@ baixe o exe na aba **Releases** e rode de qualquer lugar.
 ## Compilar
 1. Gere o `payload.zip` com os arquivos do mod na raiz (`dxgi.dll`, `OptiScaler.ini`,
    `dlssg_to_fsr3_amd_is_better.dll`, `fakenvapi.dll`/`.ini`, `amd_fidelityfx_dx12.dll`,
-   `OptiPatcher.asi`, `D3D12_Optiscaler\`, `Licenses\`, `DLSS 310.6\`, `FSR4_INT8_4.0.2c\`).
+   `OptiPatcher.asi`, `D3D12_Optiscaler\`, `Licenses\`, `FSR4_INT8_4.0.2c\`).
+   - A pasta **`DLSS 310.6\` é opcional**. Deixe-a **fora** do `payload.zip` para encolher bastante
+     o exe e **não embutir DLLs proprietários da NVIDIA** — a opção "Atualizar DLSS" se desativa
+     sozinha no app. Isso também reduz o falso-positivo de antivírus (blob grande = cara de "dropper").
 2. Rode `build.bat` (usa o `csc.exe` do .NET Framework 4 que já vem no Windows).
 
 > Os binários do mod, o `payload.zip` e o exe **não** ficam no git (grandes/terceiros).
@@ -42,10 +45,52 @@ atualiza; um `update.cfg` ao lado do exe pode sobrescrever). Se a tag for **maio
 interna (`App.Version`), ele baixa e se substitui sozinho, e reabre.
 
 ### Como lançar uma atualização
-1. Aumente `App.Version` em `OptiInstaller.cs` e rode `build.bat`.
-2. Crie uma **release** com a tag igual (ex.: `v2.6`) e anexe o novo `Instalar_Mod.exe`.
+1. Aumente **as duas** versões em `OptiInstaller.cs` (mesmo número): `App.Version` e os
+   atributos `AssemblyFileVersion`/`AssemblyVersion` no topo do arquivo.
+2. Faça commit, crie a tag e dê push: `git tag v2.6 && git push origin v2.6`.
+3. O workflow de CI (veja abaixo) compila, **assina** e anexa o `Instalar_Mod.exe` na release `v2.6`.
 
 > ⚠️ A tag da release **deve bater** com `App.Version` do exe — senão entra em loop de update.
+> (Para compilar à mão sem CI, use `build.bat`, mas o exe sai **sem assinatura**.)
+
+## Assinatura de código (SignPath — grátis p/ open-source)
+A correção definitiva do falso positivo de antivírus é **assinar o exe** (Authenticode). Isto é
+feito automaticamente pelo workflow `.github/workflows/build-and-sign.yml` usando a
+[SignPath Foundation](https://about.signpath.io/product/open-source), gratuita para projetos
+open-source. Configuração (uma vez só):
+
+1. **Aplique ao programa OSS** em https://about.signpath.io/product/open-source com este repo
+   (precisa de uma licença OSI — já incluímos a `LICENSE` MIT). Aguarde a aprovação.
+2. No SignPath, crie um **Project** (`frame-gen-mod`), uma **Artifact configuration** (executável
+   `.exe`) e uma **Signing policy** (ex.: `release-signing`). Configure o **Trusted Build System**
+   apontando para este repositório e o workflow `build-and-sign.yml` (instale o **SignPath GitHub App**).
+3. No GitHub, em **Settings → Secrets and variables → Actions**, adicione:
+   - **Secret** `SIGNPATH_API_TOKEN` — token da API do SignPath.
+   - **Secret** `PAYLOAD_URL` — link direto de download do `payload.zip` (binários do mod).
+   - **Variables** `SIGNPATH_ORGANIZATION_ID`, `SIGNPATH_PROJECT_SLUG`, `SIGNPATH_SIGNING_POLICY_SLUG`.
+4. Pronto: a cada tag `v*`, o CI compila, manda assinar e publica o exe assinado na release.
+
+> Mesmo assinado, a reputação no **SmartScreen** leva alguns downloads para "esquentar".
+> Enquanto isso, vale também reportar à Microsoft (veja abaixo).
+
+## Antivírus (falso positivo)
+O `Instalar_Mod.exe` **não tem vírus**, mas pode ser detectado pelo Windows Defender como
+`Trojan:Win32/Wacatac.B!ml`. O sufixo **`!ml`** indica detecção por *machine-learning*
+(heurística genérica), não uma assinatura de malware real. É um falso positivo comum em `.exe`
+de .NET **não assinados** que baixam/atualizam arquivos.
+
+**O que reduz o falso positivo (já aplicado / planejado):**
+- ✅ Metadados de versão embutidos no exe (empresa, produto, versão) — dão "identidade" ao binário.
+- ⏳ **Assinatura de código** (Authenticode) — a correção definitiva. Sem isso o aviso pode voltar.
+- ⏳ **Reporte de falso positivo à Microsoft** a cada release (whitelist em ~24–72h).
+
+**Para o usuário liberar manualmente (se confiar na fonte):**
+1. Windows Defender → *Proteção contra vírus e ameaças* → *Histórico de proteção* → permitir o item; **ou**
+2. *Configurações de proteção contra vírus e ameaças* → *Exclusões* → adicionar a pasta do exe.
+
+> O payload de ~77 MB embutido (a partir da v2.5) aumenta a chance de detecção heurística
+> (blob comprimido grande = cara de "dropper"). Uma alternativa é o exe baixar o payload no
+> primeiro uso, em vez de embuti-lo — reduz o tamanho e o gatilho de ML, mas perde o "exe único".
 
 ## Observações
 - O exe **não é assinado**; o Windows Defender/SmartScreen pode exibir aviso de editor desconhecido.

@@ -12,11 +12,25 @@ using System.Runtime.InteropServices;
 using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
+// Metadados do assembly: dao "identidade" ao .exe (empresa, produto, descricao, versao).
+// O csc.exe transforma estes atributos no recurso de versao do Windows (aquele que aparece
+// em Propriedades > Detalhes). Executaveis anonimos, com esses campos vazios, sao MUITO mais
+// propensos a falso-positivo de antivirus (ex.: Trojan:Win32/Wacatac.B!ml).
+[assembly: AssemblyTitle("Instalador de Mods - Frame Generation")]
+[assembly: AssemblyDescription("Instala OptiScaler + Frame Generation (dlssg-to-fsr3) em jogos. Placas RTX 20/30.")]
+[assembly: AssemblyCompany("dytech")]
+[assembly: AssemblyProduct("Frame Gen Mod Installer")]
+[assembly: AssemblyCopyright("Copyright (c) 2026 dytech")]
+[assembly: AssemblyFileVersion("2.6.0.0")]
+[assembly: AssemblyVersion("2.6.0.0")]
+
 namespace OptiInstaller
 {
     static class App
     {
-        public const string Version = "2.5";
+        // IMPORTANTE: ao subir a versao, atualize TAMBEM o AssemblyFileVersion/AssemblyVersion
+        // acima (mesmo numero) e crie a release com a tag igual (ex.: v2.6).
+        public const string Version = "2.6";
     }
 
     static class Program
@@ -399,7 +413,7 @@ namespace OptiInstaller
 
         string srcDir, selectedRoot, targetDir, lastAnalyzed;
         List<string> allFiles = new List<string>();
-        bool antiCheatFound = false, hasUpscaler = false, fsr4Available = false;
+        bool antiCheatFound = false, hasUpscaler = false, fsr4Available = false, dlssAvailable = false;
         string antiCheatFile = null;
 
         public MainForm()
@@ -639,6 +653,15 @@ namespace OptiInstaller
             {
                 cardFsr4.Enabled = false;
                 cardFsr4.Sub = "Pasta 'FSR4_INT8_4.0.2c' nao encontrada na pasta mods";
+            }
+            // DLSS 310.6 e opcional: se nao estiver no payload (ex.: removido para encolher o exe
+            // e nao distribuir DLLs proprietarios da NVIDIA), desativa a opcao em vez de falhar.
+            dlssAvailable = File.Exists(Path.Combine(srcDir, "DLSS 310.6\\nvngx_dlss.dll"));
+            if (!dlssAvailable)
+            {
+                cardDlss.Enabled = false;
+                cardDlss.Checked = false;
+                cardDlss.Sub = "DLSS 310.6 nao incluido nesta versao (use o DLSS proprio do jogo)";
             }
             if (missing.Count > 0)
             {
