@@ -13,24 +13,23 @@ using System.Web.Script.Serialization;
 using System.Windows.Forms;
 
 // Metadados do assembly: dao "identidade" ao .exe (empresa, produto, descricao, versao).
-// O csc.exe transforma estes atributos no recurso de versao do Windows (aquele que aparece
-// em Propriedades > Detalhes). Executaveis anonimos, com esses campos vazios, sao MUITO mais
-// propensos a falso-positivo de antivirus (ex.: Trojan:Win32/Wacatac.B!ml).
+// O csc.exe transforma estes atributos no recurso de versao do Windows (Propriedades > Detalhes).
+// Executaveis anonimos, com esses campos vazios, sao mais propensos a falso-positivo de antivirus.
 [assembly: AssemblyTitle("Instalador de Mods - Frame Generation")]
-[assembly: AssemblyDescription("Instala OptiScaler + Frame Generation (dlssg-to-fsr3) em jogos. Placas RTX 20/30.")]
+[assembly: AssemblyDescription("Instala OptiScaler + Frame Generation em jogos. Placas RTX 20/30.")]
 [assembly: AssemblyCompany("dytech")]
 [assembly: AssemblyProduct("Frame Gen Mod Installer")]
 [assembly: AssemblyCopyright("Copyright (c) 2026 dytech")]
-[assembly: AssemblyFileVersion("2.6.0.0")]
-[assembly: AssemblyVersion("2.6.0.0")]
+[assembly: AssemblyFileVersion("2.7.0.0")]
+[assembly: AssemblyVersion("2.7.0.0")]
 
 namespace OptiInstaller
 {
     static class App
     {
         // IMPORTANTE: ao subir a versao, atualize TAMBEM o AssemblyFileVersion/AssemblyVersion
-        // acima (mesmo numero) e crie a release com a tag igual (ex.: v2.6).
-        public const string Version = "2.6";
+        // no topo do arquivo (mesmo numero) e crie a release com a tag igual (ex.: v2.7).
+        public const string Version = "2.7";
     }
 
     static class Program
@@ -407,7 +406,7 @@ namespace OptiInstaller
         TextBox txtPath, txtLog;
         GradButton btnBrowse, btnInstall;
         IconButton btnClose, btnMin;
-        OptionCard cardDlss, cardFsr4, cardForce;
+        OptionCard cardDlss, cardFsr4, cardForce, cardMfg;
         Label lblTitle, lblSubtitle, lblTarget, lblStatus;
         RoundPanel pathCard, logCard;
 
@@ -423,7 +422,7 @@ namespace OptiInstaller
             Text = "Instalador de Mods";
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
-            ClientSize = new Size(560, 728);
+            ClientSize = new Size(560, 798);
             BackColor = Theme.Bg;
             Font = new Font("Segoe UI", 9f);
             try { Icon = Icon.ExtractAssociatedIcon(Application.ExecutablePath); } catch { }
@@ -498,8 +497,14 @@ namespace OptiInstaller
             cardForce.Accent = Theme.P1; cardForce.Checked = false;
             cardForce.SetBounds(M, oy + 140, W, 60); Controls.Add(cardForce);
 
+            cardMfg = new OptionCard();
+            cardMfg.Title = "Multi Frame Generation (ate 6X)";
+            cardMfg.Sub = "OptiScaler 0.10 + DLSS Enabler - gera ate 6X frames (pre-release)";
+            cardMfg.Accent = Theme.Blue; cardMfg.Checked = false;
+            cardMfg.SetBounds(M, oy + 210, W, 60); Controls.Add(cardMfg);
+
             // log card
-            logCard = new RoundPanel(); logCard.SetBounds(M, oy + 212, W, 150); logCard.Radius = 14; logCard.Fill = Color.FromArgb(17, 18, 32);
+            logCard = new RoundPanel(); logCard.SetBounds(M, oy + 282, W, 150); logCard.Radius = 14; logCard.Fill = Color.FromArgb(17, 18, 32);
             Controls.Add(logCard);
             txtLog = new TextBox();
             txtLog.SetBounds(12, 12, W - 24, 126);
@@ -515,7 +520,7 @@ namespace OptiInstaller
             btnInstall.C1 = Color.FromArgb(124, 92, 252); btnInstall.C2 = Color.FromArgb(79, 123, 255);
             btnInstall.Font = new Font("Segoe UI", 11f, FontStyle.Bold);
             btnInstall.Radius = 14;
-            btnInstall.SetBounds(M, oy + 374, W, 52);
+            btnInstall.SetBounds(M, oy + 444, W, 52);
             btnInstall.Enabled = false;
             btnInstall.Click += Install_Click;
             Controls.Add(btnInstall);
@@ -643,7 +648,7 @@ namespace OptiInstaller
         void CheckSource()
         {
             string[] need = new string[] {
-                "dxgi.dll", "OptiScaler.ini", "dlssg_to_fsr3_amd_is_better.dll",
+                "dxgi.dll", "OptiScaler.ini", "dlss-enabler-headless.dll",
                 "fakenvapi.dll", "fakenvapi.ini", "amd_fidelityfx_dx12.dll",
                 "D3D12_Optiscaler\\D3D12Core.dll"
             };
@@ -842,7 +847,7 @@ namespace OptiInstaller
             Directory.CreateDirectory(targetDir);
 
             CopyFile("dxgi.dll", null);
-            CopyFile("dlssg_to_fsr3_amd_is_better.dll", null);
+            CopyFile("dlss-enabler-headless.dll", null);
             CopyFile("fakenvapi.dll", null);
             CopyFile("fakenvapi.ini", null);
             CopyFile("amd_fidelityfx_dx12.dll", null);
@@ -854,22 +859,35 @@ namespace OptiInstaller
 
             string iniDst = Path.Combine(targetDir, "OptiScaler.ini");
             bool freshIni = !File.Exists(iniDst);
-            if (!freshIni)
-            {
-                Log("OptiScaler.ini ja existe -> mantido.");
-            }
-            else
+            if (freshIni)
             {
                 File.Copy(Path.Combine(srcDir, "OptiScaler.ini"), iniDst, false);
                 Log("copiado: OptiScaler.ini");
                 SetIniValue(iniDst, "LoadAsiPlugins", "true");
                 SetIniValue(iniDst, "Dx12Upscaler", "dlss");
-                SetIniValue(iniDst, "FGInput", "dlssg");
-                SetIniValue(iniDst, "FGOutput", "nukems");
                 SetIniValue(iniDst, "ShortcutKey", "0xBB");
+            }
+            else Log("OptiScaler.ini ja existe -> config base mantida.");
+
+            // Config de Frame Gen (aplicada sempre, depende da opcao MFG marcada agora).
+            // OptiScaler 0.10 usa FGOutput=nvngxfg (substitui o antigo 'nukems').
+            if (File.Exists(iniDst))
+            {
+                SetIniValue(iniDst, "FGOutput", "nvngxfg");
+                if (cardMfg.Checked)
+                {
+                    SetIniValue(iniDst, "FGInput", "nvngxfg");
+                    SetIniValueAll(iniDst, "InterpolationCount", "5"); // 5 = 6X
+                    Log("MFG 6X: FGInput/FGOutput=nvngxfg, InterpolationCount=5");
+                }
+                else
+                {
+                    SetIniValue(iniDst, "FGInput", "dlssg");
+                    SetIniValueAll(iniDst, "InterpolationCount", "auto"); // 2X
+                    Log("FG 2X: FGInput=dlssg, FGOutput=nvngxfg");
+                }
                 if (cardForce.Checked) SetIniValue(iniDst, "Enabled", "true");
-                Log("config: DLSS, FGInput=dlssg, FGOutput=nukems, menu=tecla '='"
-                    + (cardForce.Checked ? ", Enabled=true" : ""));
+                Log("menu do OptiScaler na tecla '='");
             }
 
             try
@@ -891,6 +909,7 @@ namespace OptiInstaller
             Log("");
             Log("=== CONCLUIDO ===");
             Log("No jogo: escolha o upscaler e ligue DLSS Frame Generation.");
+            if (cardMfg.Checked) Log("MFG: no overlay (tecla =), confirme o Frame Gen e o multiplicador 6X.");
             Log("Tecla = abre o overlay do OptiScaler.");
             Log("Desinstalar: rode 'Remove OptiScaler.bat' ou apague os arquivos.");
             lblStatus.ForeColor = Theme.Green;
@@ -984,6 +1003,25 @@ namespace OptiInstaller
                     return;
                 }
             }
+        }
+
+        static void SetIniValueAll(string iniPath, string key, string value)
+        {
+            string[] lines = File.ReadAllLines(iniPath);
+            bool any = false;
+            for (int i = 0; i < lines.Length; i++)
+            {
+                string ln = lines[i];
+                if (ln.TrimStart().StartsWith(";")) continue;
+                int eq = ln.IndexOf('=');
+                if (eq <= 0) continue;
+                if (string.Equals(ln.Substring(0, eq).Trim(), key, StringComparison.OrdinalIgnoreCase))
+                {
+                    lines[i] = key + " = " + value;
+                    any = true;
+                }
+            }
+            if (any) File.WriteAllLines(iniPath, lines);
         }
     }
 }
